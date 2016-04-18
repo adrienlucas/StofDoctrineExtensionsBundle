@@ -207,6 +207,77 @@ Then, after you verify the form is valid, do the following:
 And that's it. The Uploadable extension handles the rest of the stuff. Remember
 to read its documentation!
 
+Using ``Translatable`` extension
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to use the Translatable and the Translator extension, first read the documentation in
+DoctrineExtensions. Once everything is ready, add the event listener to your form type and use the
+form component as usual :
+
+.. code-block:: php
+
+    class MyType extends AbstractType
+    {
+        private $em;
+
+        public function __construct(EntityManager $em)
+        {
+            $this->em = $em;
+        }
+
+        public function buildForm(FormBuilderInterface $builder, array $options)
+        {
+            $builder
+                ->add('someField')
+            ;
+            $builder->addEventSubscriber(new TranslatableFormListener($this->em));
+        }
+
+        public function setDefaultOptions(OptionsResolverInterface $resolver)
+        {
+            $resolver->setDefaults(array(
+                'additional_locales' => ['en'],
+                'locatable_fields' => ['someField'],
+            ));
+        }
+    }
+
+The listener will add children to the form for each ``locatable_fields`` and each ``additional_locales``.
+You can then use those children in your rendering :
+
+.. code-block:: twig
+    {{form_start(myForm)}}
+        {{ form_row(myForm.someField }}
+        {{ form_row(myForm.someField_en }}
+    {{form_end(myForm)}}
+
+Don't forget to provide the entity manager to your form type :
+
+Either directly in your controller :
+
+.. code-block:: php
+
+    class MyController extends Controller
+    {
+        public function editAction($entity)
+        {
+            $em = $this->getDoctrine()->getManager();
+
+            $form = $this->createForm(new PartnerType($em), $entity, array(
+                'action' => $this->generateUrl('my_action'),
+            ));
+
+            ...
+        }
+    }
+
+Or in the service definition if your form type is one :
+
+.. code-block:: yml
+    services:
+        my_form:
+            arguments: [ '@doctrine.manager' ]
+
 Configure the bundle
 --------------------
 
